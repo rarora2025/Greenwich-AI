@@ -865,4 +865,9 @@ html {
     .about-header h2 {
         font-size: 2rem;
     }
+}
+
+/* Hide honeypot field */
+.hidden {
+    display: none;
 } 

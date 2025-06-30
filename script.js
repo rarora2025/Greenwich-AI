@@ -42,77 +42,53 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     });
 });
 
-// Form submission handling
-const contactForm = document.querySelector('.contact-form');
-if (contactForm) {
-    contactForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        // Get form data
-        const formData = new FormData(this);
-        const name = formData.get('name');
-        const email = formData.get('email');
-        const business = formData.get('business');
-        const message = formData.get('message');
-        
-        // Basic validation
-        if (!name || !email || !business || !message) {
-            showNotification('Please fill in all fields', 'error');
-            return;
-        }
-        
-        if (!isValidEmail(email)) {
-            showNotification('Please enter a valid email address', 'error');
-            return;
-        }
-        
-        // Simulate form submission (replace with actual form handling)
-        showNotification('Thank you! We\'ll get back to you soon.', 'success');
-        this.reset();
-        
-        // In a real implementation, you would send this data to your server
-        console.log('Form submitted:', { name, email, business, message });
-    });
-}
-
-// Email validation function
-function isValidEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-}
-
-// Notification system
-function showNotification(message, type = 'info') {
+// Enhanced notification system with animations
+function showNotification(message, type = 'success', duration = 4000) {
     // Remove existing notifications
-    const existingNotification = document.querySelector('.notification');
-    if (existingNotification) {
-        existingNotification.remove();
-    }
+    const existingNotifications = document.querySelectorAll('.notification');
+    existingNotifications.forEach(notification => {
+        notification.remove();
+    });
     
     // Create notification element
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
+    
+    // Set icon based on type
+    let icon = '✓';
+    if (type === 'error') icon = '✕';
+    if (type === 'warning') icon = '⚠';
+    if (type === 'info') icon = 'ℹ';
+    
     notification.innerHTML = `
         <div class="notification-content">
-            <span>${message}</span>
+            <div class="notification-icon">${icon}</div>
+            <div class="notification-text">
+                <span class="notification-message">${message}</span>
+            </div>
             <button class="notification-close">&times;</button>
         </div>
+        <div class="notification-progress"></div>
     `;
     
     // Add styles
     notification.style.cssText = `
         position: fixed;
-        top: 100px;
+        top: 20px;
         right: 20px;
-        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+        background: ${getNotificationColor(type)};
         color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 10px;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        padding: 0;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
         z-index: 10000;
-        transform: translateX(400px);
-        transition: transform 0.3s ease;
+        transform: translateX(400px) scale(0.8);
+        transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         max-width: 400px;
+        min-width: 300px;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
     `;
     
     // Add to page
@@ -120,24 +96,145 @@ function showNotification(message, type = 'info') {
     
     // Animate in
     setTimeout(() => {
-        notification.style.transform = 'translateX(0)';
+        notification.style.transform = 'translateX(0) scale(1)';
+    }, 100);
+    
+    // Progress bar animation
+    const progressBar = notification.querySelector('.notification-progress');
+    progressBar.style.cssText = `
+        height: 3px;
+        background: rgba(255, 255, 255, 0.3);
+        width: 100%;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        transform: scaleX(1);
+        transform-origin: left;
+        transition: transform ${duration}ms linear;
+    `;
+    
+    // Animate progress bar
+    setTimeout(() => {
+        progressBar.style.transform = 'scaleX(0)';
     }, 100);
     
     // Close button functionality
     const closeBtn = notification.querySelector('.notification-close');
     closeBtn.addEventListener('click', () => {
-        notification.style.transform = 'translateX(400px)';
-        setTimeout(() => notification.remove(), 300);
+        closeNotification(notification);
     });
     
-    // Auto remove after 5 seconds
+    // Auto remove after duration
     setTimeout(() => {
         if (notification.parentNode) {
-            notification.style.transform = 'translateX(400px)';
-            setTimeout(() => notification.remove(), 300);
+            closeNotification(notification);
         }
-    }, 5000);
+    }, duration);
+    
+    // Add hover effect
+    notification.addEventListener('mouseenter', () => {
+        progressBar.style.transition = 'transform 0.1s linear';
+    });
+    
+    notification.addEventListener('mouseleave', () => {
+        progressBar.style.transition = `transform ${duration}ms linear`;
+    });
 }
+
+function closeNotification(notification) {
+    notification.style.transform = 'translateX(400px) scale(0.8)';
+    notification.style.opacity = '0';
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 400);
+}
+
+function getNotificationColor(type) {
+    switch(type) {
+        case 'success': return 'linear-gradient(135deg, #10b981, #059669)';
+        case 'error': return 'linear-gradient(135deg, #ef4444, #dc2626)';
+        case 'warning': return 'linear-gradient(135deg, #f59e0b, #d97706)';
+        case 'info': return 'linear-gradient(135deg, #3b82f6, #2563eb)';
+        default: return 'linear-gradient(135deg, #10b981, #059669)';
+    }
+}
+
+// Add CSS for notification content
+const notificationStyles = `
+    .notification-content {
+        display: flex;
+        align-items: center;
+        padding: 16px 20px;
+        gap: 12px;
+    }
+    
+    .notification-icon {
+        font-size: 20px;
+        font-weight: bold;
+        min-width: 24px;
+        text-align: center;
+    }
+    
+    .notification-text {
+        flex: 1;
+    }
+    
+    .notification-message {
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.4;
+    }
+    
+    .notification-close {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 18px;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: background 0.2s ease;
+        opacity: 0.7;
+    }
+    
+    .notification-close:hover {
+        background: rgba(255, 255, 255, 0.1);
+        opacity: 1;
+    }
+`;
+
+// Inject styles
+const styleSheet = document.createElement('style');
+styleSheet.textContent = notificationStyles;
+document.head.appendChild(styleSheet);
+
+// Form submission with enhanced feedback
+document.addEventListener('DOMContentLoaded', () => {
+    const contactForm = document.querySelector('.contact-form');
+    if (contactForm) {
+        contactForm.addEventListener('submit', function(e) {
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            
+            submitBtn.textContent = 'Sending...';
+            submitBtn.style.opacity = '0.7';
+            submitBtn.disabled = true;
+            
+            // Show success notification after a short delay
+            setTimeout(() => {
+                showNotification('Message sent successfully! We\'ll get back to you soon.', 'success', 5000);
+                
+                // Reset button
+                submitBtn.textContent = originalText;
+                submitBtn.style.opacity = '1';
+                submitBtn.disabled = false;
+            }, 1000);
+        });
+    }
+});
 
 // Intersection Observer for animations
 const observerOptions = {
